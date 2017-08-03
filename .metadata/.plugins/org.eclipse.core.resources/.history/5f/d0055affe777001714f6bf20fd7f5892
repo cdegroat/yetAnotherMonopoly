@@ -1,0 +1,10 @@
+package game;
+
+public class LuxuryTaxSquare extends MonopolySquare {
+	
+	public LuxuryTaxSquare(){
+		super.setName("Luxury Tax");
+		super.setOwnable(false);
+	}
+
+}

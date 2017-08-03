@@ -1,0 +1,10 @@
+package game.squares;
+
+public class ShortLineRailroad extends Railroad {
+
+	public ShortLineRailroad(){
+		super.setName("Reading Railroad");
+		super.setOwnable(true);
+		super.setCost(200);
+	}
+}

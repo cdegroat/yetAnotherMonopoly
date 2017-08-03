@@ -1,0 +1,71 @@
+package game;
+
+public class MonopolySquare implements IMonopolySquare {
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void setName(String name) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public void setCost(int val) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public int getCost() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int getChargeAmount() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int getNumberHouses() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void setNumberHouses(int numberHouses) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public int getNumberHotels() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void setNumberHotels(int numberHotels) {
+		// TODO Auto-generated method stub
+
+	}
+
+	@Override
+	public boolean isMortgaged() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public void setMortgaged() {
+		// TODO Auto-generated method stub
+
+	}
+
+}

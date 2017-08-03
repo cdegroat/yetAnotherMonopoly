@@ -1,0 +1,10 @@
+package game;
+
+import java.util.ArrayList;
+
+public class MonopolyGame {
+
+	ArrayList<IMonopolyPlayer> players;
+	IBoard board;
+	IDiceRoller roller;
+}

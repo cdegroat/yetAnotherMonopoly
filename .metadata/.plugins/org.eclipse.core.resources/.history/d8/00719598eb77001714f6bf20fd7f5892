@@ -1,0 +1,7 @@
+package game.squares;
+
+import game.MonopolySquare;
+
+public class OrientalAve extends MonopolySquare {
+
+}

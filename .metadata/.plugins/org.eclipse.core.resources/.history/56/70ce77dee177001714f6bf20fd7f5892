@@ -1,0 +1,30 @@
+package game;
+
+import java.util.ArrayList;
+
+public class MonopolyGame {
+
+	ArrayList<IMonopolyPlayer> players = new ArrayList<IMonopolyPlayer>();
+	IBoard board;
+	IDiceRoller roller;
+	
+	public ArrayList<IMonopolyPlayer> getPlayers() {
+		return players;
+	}
+	public void setPlayers(ArrayList<IMonopolyPlayer> players) {
+		this.players = players;
+	}
+	public IBoard getBoard() {
+		return board;
+	}
+	public void setBoard(IBoard board) {
+		this.board = board;
+	}
+	public IDiceRoller getRoller() {
+		return roller;
+	}
+	public void setRoller(IDiceRoller roller) {
+		this.roller = roller;
+	}
+	
+}

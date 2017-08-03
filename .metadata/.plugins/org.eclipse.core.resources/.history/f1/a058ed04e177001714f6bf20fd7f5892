@@ -1,0 +1,13 @@
+package game;
+
+import java.util.ArrayList;
+
+public class Board implements IBoard {
+
+	@Override
+	public ArrayList<IMonopolySquare> getSquares() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

@@ -1,0 +1,5 @@
+package game.squares;
+
+public class ElectricCompany extends Utility {
+
+}

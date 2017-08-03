@@ -1,0 +1,418 @@
+package tests;
+
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+
+import org.junit.Test;
+
+import game.Board;
+import game.DiceResult;
+import game.FakeDiceRoller;
+import game.FakeMonopolyPlayer;
+import game.IBoard;
+import game.IMonopolyPlayer;
+import game.MonopolyGame;
+import game.MonopolyPlayer;
+import game.squares.BORailroad;
+import game.squares.ElectricCompany;
+import game.squares.PennsylvaniaRailroad;
+import game.squares.ReadingRailroad;
+import game.squares.ShortLineRailroad;
+
+public class TestGame {
+
+	/*
+
+
+If landing on Real Estate and not all in the same Property Group are owned, rent is stated rent value.
+If landing on Real Estate and Owner owns all in the same Property Group, rent is 2 times stated rent value.
+During a turn, Player starts on Go, roles doubles (6) and then non-doubles of 4. Final Location is 10. The player landed on a total of two locations.
+During a turn, Player does not roll doubles. Only moves equal single roll value. The player only lands on one Location.
+During a turn, Player rolls doubles twice, they move for a total of 3 roll values and land on a total of three locations.
+During a turn, Player rolls doubles three times, they end up on Just Visiting.
+	 */
+
+	public MonopolyGame initGame(){
+		MonopolyGame game= new MonopolyGame();
+		IMonopolyPlayer player = new MonopolyPlayer();
+		player.setMoney(0);
+		FakeDiceRoller roller = new FakeDiceRoller(6,1);
+		game.getPlayers().add(player);
+		game.setRoller(roller);
+		game.setBoard(new Board());
+		return game;
+	}
+	
+	public MonopolyGame initFullGame(){
+		MonopolyGame game= new MonopolyGame();
+		for(int i= 0;i < 8;i ++){
+			IMonopolyPlayer player = new MonopolyPlayer();
+			game.getPlayers().add(player);
+		}
+		game.setBoard(new Board());
+		return game;
+	}
+	@Test
+	public void testRoll7(){
+		//Player on beginning location (numbered 0), rolls 7, ends up on location 7
+		MonopolyGame game = initGame();
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(7, game.getPlayers().get(0).getPosition());
+		
+	}
+	
+	@Test
+	public void testRollLate(){
+		//Player on location numbered 39, rolls 6, ends up on location 5
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(39);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(5, game.getPlayers().get(0).getPosition());
+	}
+	@Test
+	public void createGameTwoPlayers(){
+		//Create a game with two players named Horse and Car.
+		MonopolyGame game = new MonopolyGame();
+		MonopolyPlayer player = new MonopolyPlayer();
+		player.setName("Horse");
+		game.getPlayers().add(player);
+		player = new MonopolyPlayer();
+		player.setName("Car");
+		game.getPlayers().add(player);
+		assertEquals("Horse",game.getPlayers().get(0).getName());
+		assertEquals("Car",game.getPlayers().get(1).getName());
+	
+	}
+	@Test
+	public void validatePlayers(){
+		//Try to create a game with < 2 or > 8 players. When attempting to play the game, it will fail.
+		MonopolyGame game = new MonopolyGame();
+		game.getPlayers().add(new MonopolyPlayer());
+		assertEquals("Incorrect number of players, need between 2 and 8",game.validatePlayers());
+		
+		game.getPlayers().add(new MonopolyPlayer());
+		assertEquals(null,game.validatePlayers());
+		
+		for(int i= 0;i < 7;i ++){
+			game.getPlayers().add(new MonopolyPlayer());
+		}
+		assertEquals("Incorrect number of players, need between 2 and 8",game.validatePlayers());
+	}
+	
+	@Test
+	public void play20Rounds(){
+		//Create a game and play, verify that the total rounds was 20 and that each player played 20 rounds.
+		MonopolyGame game = initFullGame();
+		for(int i = 0;i < 20;i ++){
+			game.playRound();
+		}
+		for(IMonopolyPlayer player:game.getPlayers()){
+			assertEquals(20,player.getNumberRoundsPlayed());
+		}
+	}
+	
+	@Test
+	public void play20RoundsVerifyPlayerIntegrity(){
+		//Create a game and play, verify that in every round the order of the players remained the same.
+		MonopolyGame game = initFullGame();
+		ArrayList<IMonopolyPlayer> players = (ArrayList)game.getPlayers().clone();
+		for(int i = 0;i < 20;i ++){
+			game.playRound();
+			for(int x = 0;x < players.size(); x++){
+				assertEquals(players.get(x),game.getPlayers().get(x));
+			}
+		}
+	}
+	
+	@Test
+	public void landOnGo(){
+		//During a turn a Player lands on Go and their balance increases by $200.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(38);
+		game.setRoller(new FakeDiceRoller(1,1));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(200,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test
+	public void landsOnNothingSpecial(){
+		//During a turn a Player lands on some "normal" location and their balance does not change.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(20);
+		game.setRoller(new FakeDiceRoller(3,4));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(0,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test
+	public void movesPastGo(){
+		//Player starts before Go near the end of the Board, rolls enough to pass Go. The Player's balance increases by $200.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(38);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(200,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test
+	public void startsOnGo(){
+		//Player starts on Go, takes a turn where the Player does not additionally land on or pass over Go. Their balance remains unchanged.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(0,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test
+	public void landsOnJustVisiting(){
+		//Player starts before Go To Jail, lands on Go To Jail, ends up on Just Visiting and their balance is unchanged.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(3);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(0,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test
+	public void passesJail(){
+		//Player starts before Go To Jail, rolls enough to pass over Go To Jail but not enough to land on or pass over go. Their balance is unchanged and they end up where the should based on what they rolled.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(7);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(0,game.getPlayers().get(0).getMoney());
+		assertEquals(7+7,game.getPlayers().get(0).getPosition());
+	}
+	
+	@Test
+	public void passesGoTwice(){
+		//Player passes go twice during a turn. Their balance increases by $200 each time for a total change of $400.
+		MonopolyGame game = initGame();
+		game.getPlayers().get(0).setPosition(38);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(200,game.getPlayers().get(0).getMoney());
+		game.getPlayers().get(0).setPosition(38);
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(400,game.getPlayers().get(0).getMoney());
+	}
+	
+	@Test 
+	public void playerLandsIncomeTax1800(){
+		//During a turn, a Player with an initial total worth of $1800 lands on Income Tax. The balance decreases by $180.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(1800);
+		player.setMoney(1800);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(1,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(1800-180,player.getMoney());
+	}
+	
+	@Test
+	public void playerLandsIncomeTax2200(){
+		//During a turn, a Player with an initial total worth of $2200 lands on Income Tax. The balance decreases by $200.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2200);
+		player.setMoney(2200);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(1,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2200-200,player.getMoney());
+	}
+	
+	@Test
+	public void playerLandsIncomeTax0(){
+		//During a turn, a Player with an initial total worth of $0 lands on Income Tax. The balance decreases by $0.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(0);
+		player.setMoney(0);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(1,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(0-0,player.getMoney());
+	}
+	@Test
+	public void playerLandsIncomeTax2000(){
+		//During a turn, a Player with an initial total worth of $2000 lands on Income Tax. The balance decreases by $200.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(1,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000-200,player.getMoney());
+	}
+	
+	@Test
+	public void playerPassesOverIncomeTax(){
+		//During a turn, a Player passes over Income Tax. Nothing happens.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,3));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void playerLandsLuxuryTax(){
+		//Player takes a turn and lands on Luxury tax. Their balance decreases by $75.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(30);
+		game.setRoller(new FakeDiceRoller(4,4));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000-75,player.getMoney());
+	}
+	
+	@Test
+	public void playerPassesLuxuryTax(){
+		//Player passes Luxury Tax during a turn. Their balance is unchanged.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(30);
+		game.setRoller(new FakeDiceRoller(4,5));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void buysProperty(){
+		//Land on a Property that is not owned. After turn, property is owned and balance decreases by cost of property.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		game.playerBuysProperty(player);
+		assertEquals(2000-100,player.getMoney());
+	}
+	
+	
+	@Test
+	public void landOnOwnProperty(){
+		//Land on a Property that I own, nothing happens.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		game.playerBuysProperty(player);
+		assertEquals(2000-100,player.getMoney());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000-100,player.getMoney());
+		
+	}
+	
+	@Test
+	public void passOverProperty(){
+		//Pass over an unowned Property, nothing happens.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void landOnOtherPlayersProperty(){
+		//Land on a Property owned by other player, player pays rent to owner. Player's balance decreases by rent amount. Owners balance increases by rent amount.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		game.setRoller(new FakeDiceRoller(4,2));
+		game.playerRolls(game.getPlayers().get(0));
+		game.playerBuysProperty(player);
+		assertEquals(2000-100,player.getMoney());
+		
+		
+		FakeMonopolyPlayer player2 = new FakeMonopolyPlayer(2000);
+		player2.setMoney(2000);
+		game.getPlayers().add(player2);
+		game.getPlayers().get(1).setPosition(0);
+		game.playerRolls(game.getPlayers().get(1));
+		assertEquals(2000-100+6,player.getMoney());
+		assertEquals(2000-6,player2.getMoney());
+	}
+	
+	@Test
+	public void chargeOnRailroad(){
+		//If landing on Railroad, rent is 25, 50, 100, 200 depending on how many are owned by owner (1 - 4).
+		IMonopolyPlayer player = new MonopolyPlayer();
+		ReadingRailroad rr = new ReadingRailroad();
+		player.addProperty(rr);
+		rr.setOwner(player);
+		assertEquals(25,rr.getChargeAmount(null, null,null));
+		PennsylvaniaRailroad penn = new PennsylvaniaRailroad();
+		player.addProperty(penn);
+		penn.setOwner(player);
+		assertEquals(50,penn.getChargeAmount(null, null,null));
+		ShortLineRailroad shortline = new ShortLineRailroad();
+		player.addProperty(shortline);
+		shortline.setOwner(player);
+		assertEquals(100,shortline.getChargeAmount(null, null,null));
+		BORailroad bo = new BORailroad();
+		player.addProperty(bo);
+		bo.setOwner(player);
+		assertEquals(200,bo.getChargeAmount(null, null,null));
+	}
+	
+	
+	@Test
+	public void chargeOnUtility(){
+		//If landing on Utility and only one Utility owned, rent is 4 times current value on Dice.
+		IMonopolyPlayer player = new MonopolyPlayer();
+		ElectricCompany square = new ElectricCompany();
+		player.addProperty(square);
+		square.setOwner(player);
+		DiceResult res = new DiceResult();
+		res.setDie1(2);
+		res.setDie2(2);
+		IBoard board = new Board();
+		assertEquals(16,square.getChargeAmount(null, res,board));
+	}
+	
+	public void chargeOnUtilityTwoOwned(){
+		//If landing on Utility and both owned (not necessarily by same Player), rent is 10 times current value on Dice.
+	}
+	
+	
+		
+	
+}
