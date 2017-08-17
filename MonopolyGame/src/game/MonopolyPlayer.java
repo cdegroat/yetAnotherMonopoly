@@ -9,7 +9,13 @@ public class MonopolyPlayer implements IMonopolyPlayer {
 	int position;
 	String name;
 	int numberRoundsPlayed;
+	int jailTurn;
 	
+	public void payWayOutOfJail(){
+		this.subtractMoney(50);
+		this.jailTurn = 0;
+		this.position = 10;
+	}
 	@Override
 	public int subtractMoney(int val) {
 		return money -= val;
@@ -68,6 +74,14 @@ public class MonopolyPlayer implements IMonopolyPlayer {
 	
 	public void addProperty(IMonopolySquare square){
 		this.getOwned().add(square);
+	}
+
+	public int getJailTurn() {
+		return jailTurn;
+	}
+
+	public void setJailTurn(int jailTurn) {
+		this.jailTurn = jailTurn;
 	}
 
 	

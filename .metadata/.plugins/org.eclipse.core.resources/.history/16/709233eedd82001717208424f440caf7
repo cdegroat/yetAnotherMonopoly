@@ -1,0 +1,8 @@
+package game;
+
+public class TurnResult {
+
+	DiceResult diceResult;
+	boolean forceEndTurn;
+	int newPosition;
+}

@@ -1,5 +1,0 @@
-package game.squares;
-
-public class WaterWorks extends Utility {
-
-}

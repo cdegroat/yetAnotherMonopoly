@@ -85,5 +85,9 @@ public class MonopolySquare implements IMonopolySquare {
 	public void setOwner(IMonopolyPlayer owner) {
 		this.owner = owner;
 	}
+	
+	public boolean isGoToJail(){
+		return false;
+	}
 
 }

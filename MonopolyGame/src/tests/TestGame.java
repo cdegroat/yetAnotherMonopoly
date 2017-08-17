@@ -11,6 +11,7 @@ import game.DiceResult;
 import game.FakeDiceRoller;
 import game.FakeMonopolyPlayer;
 import game.IBoard;
+import game.IDiceRoller;
 import game.IMonopolyPlayer;
 import game.IMonopolySquare;
 import game.MonopolyGame;
@@ -26,12 +27,6 @@ public class TestGame {
 	/*
 
 
-If landing on Real Estate and not all in the same Property Group are owned, rent is stated rent value.
-If landing on Real Estate and Owner owns all in the same Property Group, rent is 2 times stated rent value.
-During a turn, Player starts on Go, roles doubles (6) and then non-doubles of 4. Final Location is 10. The player landed on a total of two locations.
-During a turn, Player does not roll doubles. Only moves equal single roll value. The player only lands on one Location.
-During a turn, Player rolls doubles twice, they move for a total of 3 roll values and land on a total of three locations.
-During a turn, Player rolls doubles three times, they end up on Just Visiting.
 	 */
 
 	public MonopolyGame initGame(){
@@ -47,6 +42,7 @@ During a turn, Player rolls doubles three times, they end up on Just Visiting.
 	
 	public MonopolyGame initFullGame(){
 		MonopolyGame game= new MonopolyGame();
+		game.setRoller(new FakeDiceRoller(3,1));
 		for(int i= 0;i < 8;i ++){
 			IMonopolyPlayer player = new MonopolyPlayer();
 			game.getPlayers().add(player);
@@ -427,7 +423,289 @@ During a turn, Player rolls doubles three times, they end up on Just Visiting.
 		assertEquals(40,electricCompany.getChargeAmount(null, res,board));
 	}
 	
-	
+	@Test
+	public void calculateChargeOnNonMonopoly(){
+//If landing on Real Estate and not all in the same Property Group are owned, rent is stated rent value.
+		IMonopolyPlayer player = new MonopolyPlayer();
+		IBoard board = new Board();
+		IMonopolySquare oriental = board.getSquares().get(6);
+		player.addProperty(oriental);
+		oriental.setOwner(player);
+		DiceResult res = new DiceResult();
+		res.setDie1(3);
+		res.setDie2(3);
 		
+		assertEquals(6,oriental.getChargeAmount(null, res,board));
+	}
 	
+	@Test
+	public void calculateChargeOnMonopoly(){
+		//		If landing on Real Estate and Owner owns all in the same Property Group, rent is 2 times stated rent value.
+		IMonopolyPlayer player = new MonopolyPlayer();
+		IBoard board = new Board();
+		IMonopolySquare oriental = board.getSquares().get(6);
+		player.addProperty(oriental);
+		oriental.setOwner(player);
+		IMonopolySquare vermont = board.getSquares().get(8);
+		player.addProperty(vermont);
+		vermont.setOwner(player);
+		IMonopolySquare connect = board.getSquares().get(9);
+		player.addProperty(connect);
+		connect.setOwner(player);
+		DiceResult res = new DiceResult();
+		res.setDie1(3);
+		res.setDie2(3);
+		
+		assertEquals(12,oriental.getChargeAmount(null, res,board));
+	}
+	
+	@Test
+	public void rollsOneDoubles(){
+		//During a turn, Player starts on Go, roles doubles (6) and then non-doubles of 4. Final Location is 10. The player landed on a total of two locations.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeRollers = new ArrayList<IDiceRoller>();
+		fakeRollers.add(new FakeDiceRoller(3,3));
+		fakeRollers.add(new FakeDiceRoller(3,1));
+		game.playTurn(player, fakeRollers);
+		
+		assertEquals(10,player.getPosition());
+	}
+	
+	@Test
+	public void rollsNonDoubles(){
+		//During a turn, Player does not roll doubles. Only moves equal single roll value. The player only lands on one Location.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeRollers = new ArrayList<IDiceRoller>();
+		fakeRollers.add(new FakeDiceRoller(3,2));
+		game.playTurn(player, fakeRollers);
+		
+		assertEquals(5,player.getPosition());
+	}
+	@Test
+	public void rollsDoublesTwice(){
+		//During a turn, Player rolls doubles twice, they move for a total of 3 roll values and land on a total of three locations.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeRollers = new ArrayList<IDiceRoller>();
+		fakeRollers.add(new FakeDiceRoller(3,3));
+		fakeRollers.add(new FakeDiceRoller(3,3));
+		fakeRollers.add(new FakeDiceRoller(4,2));
+		game.playTurn(player, fakeRollers);
+		
+		assertEquals(18,player.getPosition());
+	}
+	
+	@Test 
+	public void landsOnGoToJail(){
+		//Roll non-doubles, land on Go To Jail, player is in Jail, turn is over, balance is unchanged.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(25);
+		game.setRoller(new FakeDiceRoller(3,2));
+		game.playerRolls(player);
+		
+		assertEquals(true,player.getJailTurn() == 1);
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void landsOnGoToJailOnDoublesRoll(){
+		//Roll doubles, land on Go To Jail, player is in Jail, turn is over, balance is unchanged.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(24);
+		game.setRoller(new FakeDiceRoller(3,3));
+		game.playerRolls(player);
+		
+		assertEquals(true,player.getJailTurn() == 1);
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void passesOverGoToJail(){
+		//Pass over Go To Jail, nothing happens.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(24);
+		game.setRoller(new FakeDiceRoller(3,4));
+		game.playerRolls(player);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void rollsThreeDoublesGoesToJail(){
+		//Roll doubles 3 times in a row, never pass or land on go. Balance is unchanged. Player is in Jail.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(3,3));
+		fakeDice.add(new FakeDiceRoller(4,4));
+		fakeDice.add(new FakeDiceRoller(2,2));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 1);
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void rollsDoublesThreeTimesPassesGo(){
+		//Roll doubles 3 times in a row, pass or land on go during first two rolls. Balance increases by $200. Player is in Jail.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(38);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(2,2));
+		fakeDice.add(new FakeDiceRoller(4,4));
+		fakeDice.add(new FakeDiceRoller(2,2));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 1);
+		assertEquals(2200,player.getMoney());
+	}
+	
+	@Test
+	public void rollsDoublesTwiceNotMuchHappens(){
+		//Roll doubles 2 times in a row. Player is not in Jail.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(2,2));
+		fakeDice.add(new FakeDiceRoller(4,4));
+		fakeDice.add(new FakeDiceRoller(3,4));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+	}
+	
+	@Test
+	public void playerPaysWayOutOfJail(){
+		//In Jail, Player pays $50. Rolls doubles, moves and rolls again, balance decreased by $50.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		player.setJailTurn(1);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(2,2));
+		fakeDice.add(new FakeDiceRoller(3,4));
+		player.payWayOutOfJail();
+		game.playTurn(player, fakeDice);
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(21,player.getPosition());
+		assertEquals(1950,player.getMoney());
+	}
+	
+	@Test
+	
+	public void playerInJailRollsDoublesGetsOut(){
+		//In Jail turns 1/2, roll doubles. Move once, no more rolling/moving.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		player.setJailTurn(1);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(2,2));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(10,player.getPosition());
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void playerInJailDoesNotRollDoublesStillInJail(){
+		//In Jail, turn 1/2, do not roll doubles. Still in Jail.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		player.setJailTurn(1);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(3,5));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 2);
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void playerInJailTurn3RollsDoubles(){
+		//In Jail, turn 3, roll doubles. Move and don't roll again.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		player.setJailTurn(3);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(4,4));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(18,player.getPosition());
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void playerInJailTurnThreeRollsNonDoublesMovesLosesMoney(){
+		//In Jail, turn 3, do not roll doubles. Move, balance decreased by $50.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		player.setJailTurn(3);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(3,4));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(17,player.getPosition());
+		assertEquals(1950,player.getMoney());
+	}
 }

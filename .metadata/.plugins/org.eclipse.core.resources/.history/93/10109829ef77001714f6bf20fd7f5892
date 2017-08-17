@@ -1,7 +1,0 @@
-package game.squares;
-
-import game.MonopolySquare;
-
-public class Utility extends MonopolySquare {
-
-}

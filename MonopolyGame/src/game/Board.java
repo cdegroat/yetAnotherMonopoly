@@ -2,10 +2,13 @@ package game;
 
 import java.util.ArrayList;
 
+import game.squares.ConnecticutAve;
 import game.squares.ElectricCompany;
+import game.squares.GoToJail;
 import game.squares.IncomeTaxSquare;
 import game.squares.LuxuryTaxSquare;
 import game.squares.OrientalAve;
+import game.squares.VermontAve;
 import game.squares.WaterWorks;
 
 public class Board implements IBoard {
@@ -21,11 +24,20 @@ public class Board implements IBoard {
 			if(i == 6){
 				square = new OrientalAve();
 			}
+			if(i == 8){
+				square = new VermontAve();
+			}
+			if(i == 9){
+				square = new ConnecticutAve();
+			}
 			if(i == 12){
 				square = new ElectricCompany();
 			}
 			if(i == 28){
 				square = new WaterWorks();
+			}
+			if(i == 30){
+				square = new GoToJail();
 			}
 			if(i == 38){
 				square = new LuxuryTaxSquare();

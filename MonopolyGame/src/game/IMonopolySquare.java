@@ -16,5 +16,6 @@ public interface IMonopolySquare {
 	public boolean isOwnable();
 	public IMonopolyPlayer getOwner();
 	public void setOwner(IMonopolyPlayer player);
+	public boolean isGoToJail();
 	
 }

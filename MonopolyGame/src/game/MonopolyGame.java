@@ -2,6 +2,8 @@ package game;
 
 import java.util.ArrayList;
 
+import game.squares.GoToJail;
+
 public class MonopolyGame {
 
 	ArrayList<IMonopolyPlayer> players = new ArrayList<IMonopolyPlayer>();
@@ -11,32 +13,91 @@ public class MonopolyGame {
 	
 	public void playRound(){
 		for(int i= 0;i < players.size();i ++){
-			playTurn(players.get(i));
+			playTurn(players.get(i),null);
 		}
 		roundsPlayed++;
 	}
 	
-	public void playTurn(IMonopolyPlayer player){
+	public void playTurn(IMonopolyPlayer player, ArrayList<IDiceRoller> rollers){
 		player.setNumberRoundsPlayed(player.getNumberRoundsPlayed()+1);
+		if(rollers != null){
+			this.roller = rollers.get(0);
+		}
+		TurnResult result = playerRolls(player);
+		if(result.isForceEndTurn()){
+			return;
+		}
+		if(result.getDiceResult().isDoubles()){
+			if(rollers != null){
+				this.roller = rollers.get(1);
+			}
+			result = playerRolls(player);
+			if(result.isForceEndTurn()){
+				return;
+			}
+			if(result.getDiceResult().isDoubles()){
+				if(rollers != null){
+					this.roller = rollers.get(2);
+				}
+				result = playerRolls(player);
+				if(result.isForceEndTurn()){
+					return;
+				}
+				if(result.getDiceResult().isDoubles()){
+					movePlayerToJail(player);
+				}
+			}
+		}
 	}
 	
-	public void playerRolls(IMonopolyPlayer player){
+	public void movePlayerToJail(IMonopolyPlayer player){
+		player.setJailTurn(1);
+		player.setPosition(10);
+	}
+	
+	public TurnResult playerRolls(IMonopolyPlayer player){
 		DiceResult result = roller.rollDice();
-		int newPosition = board.movePlayerToSquare(result.die1+result.die2, player);
-		if(newPosition < player.getPosition()){
-			board.awardPassGo(player);
+		boolean moved = false;
+		boolean forceEndTurn = false;
+		if(player.getJailTurn() >= 1){
+			if(result.isDoubles() || player.getJailTurn() == 3){
+				if(!result.isDoubles()){
+					player.subtractMoney(50);
+				}
+				forceEndTurn = true;
+				if(player.getJailTurn() == 3){
+					moved = true;
+				}
+				player.setJailTurn(0);
+				player.setPosition(10);
+			}else{
+				player.setJailTurn(player.getJailTurn()+1);
+			}
+		}else{
+			moved = true;
 		}
-		player.setPosition(newPosition);
-		IMonopolySquare square = board.getSquares().get(newPosition);
-		if(square.getOwner() != null && square.getOwner() != player){
-			int charge = square.getChargeAmount(player, result,board);
-			player.subtractMoney(charge);
-			square.getOwner().addMoney(charge);
+		if(moved){
+			int newPosition = board.movePlayerToSquare(result.die1+result.die2, player);
+			if(newPosition < player.getPosition()){
+				board.awardPassGo(player);
+			}
+			player.setPosition(newPosition);
+			IMonopolySquare square = board.getSquares().get(newPosition);
+			if(square.getOwner() != null && square.getOwner() != player){
+				int charge = square.getChargeAmount(player, result,board);
+				player.subtractMoney(charge);
+				square.getOwner().addMoney(charge);
+			}
+			if(!square.isOwnable()){
+				if(square.isGoToJail()){
+					player.setJailTurn(1);
+					forceEndTurn = true;
+				}
+				int charge = square.getChargeAmount(player,result,board);
+				player.subtractMoney(charge);
+			}
 		}
-		if(!square.isOwnable()){
-			int charge = square.getChargeAmount(player,result,board);
-			player.subtractMoney(charge);
-		}
+		return new TurnResult(result,forceEndTurn,player.getPosition());
 	}
 	
 	public String validatePlayers(){

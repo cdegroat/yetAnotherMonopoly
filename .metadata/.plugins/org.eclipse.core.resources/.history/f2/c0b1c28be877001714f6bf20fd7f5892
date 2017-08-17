@@ -1,5 +1,0 @@
-package game;
-
-public class FakeMonopolyPlayer extends MonopolyPlayer {
-
-}

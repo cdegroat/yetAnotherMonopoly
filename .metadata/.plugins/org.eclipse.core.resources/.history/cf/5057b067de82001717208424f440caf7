@@ -1,0 +1,11 @@
+package game.squares;
+
+import game.MonopolySquare;
+
+public class GoToJail extends MonopolySquare {
+
+	public boolean isJailSquare(){
+		return true;
+	}
+	
+}

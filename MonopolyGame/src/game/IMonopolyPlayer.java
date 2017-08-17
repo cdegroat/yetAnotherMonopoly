@@ -16,5 +16,7 @@ public interface IMonopolyPlayer {
 	public int getNetWorth();
 	public ArrayList<IMonopolySquare> getOwned();
 	public void addProperty(IMonopolySquare square);
-	
+	public int getJailTurn();
+	public void setJailTurn(int turn);
+	public void payWayOutOfJail();
 }

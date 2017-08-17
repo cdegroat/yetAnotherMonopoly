@@ -1,0 +1,14 @@
+package game;
+
+public class TurnResult {
+
+	DiceResult diceResult;
+	boolean forceEndTurn;
+	int newPosition;
+	
+	public TurnResult(DiceResult result,boolean forceEndTurn,int newPosition){
+		this.diceResult = result;
+		this.forceEndTurn = forceEndTurn;
+		this.newPosition = newPosition;
+	}
+}
