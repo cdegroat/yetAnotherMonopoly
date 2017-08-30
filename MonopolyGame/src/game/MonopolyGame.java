@@ -2,6 +2,7 @@ package game;
 
 import java.util.ArrayList;
 
+import game.squares.CardDealerSquare;
 import game.squares.GoToJail;
 
 public class MonopolyGame {
@@ -77,27 +78,56 @@ public class MonopolyGame {
 			moved = true;
 		}
 		if(moved){
-			int newPosition = board.movePlayerToSquare(result.die1+result.die2, player);
-			if(newPosition < player.getPosition()){
-				board.awardPassGo(player);
-			}
-			player.setPosition(newPosition);
-			IMonopolySquare square = board.getSquares().get(newPosition);
-			if(square.getOwner() != null && square.getOwner() != player){
-				int charge = square.getChargeAmount(player, result,board);
-				player.subtractMoney(charge);
-				square.getOwner().addMoney(charge);
-			}
-			if(!square.isOwnable()){
-				if(square.isGoToJail()){
-					player.setJailTurn(1);
-					forceEndTurn = true;
-				}
-				int charge = square.getChargeAmount(player,result,board);
-				player.subtractMoney(charge);
-			}
+			forceEndTurn = movePlayer(player,result) || forceEndTurn;
 		}
 		return new TurnResult(result,forceEndTurn,player.getPosition());
+	}
+	
+	public boolean movePlayer(IMonopolyPlayer player, DiceResult result){
+		boolean forceEndTurn = false;
+		int newPosition = board.movePlayerToSquare(result.die1+result.die2, player);
+		if(newPosition < player.getPosition()){
+			board.awardPassGo(player);
+		}
+		player.setPosition(newPosition);
+		IMonopolySquare square = board.getSquares().get(newPosition);
+		if(square.getOwner() != null && square.getOwner() != player){
+			int charge = square.getChargeAmount(player, result,board);
+			player.subtractMoney(charge);
+			square.getOwner().addMoney(charge);
+		}
+		if(!square.isOwnable()){
+			forceEndTurn = handleNonOwnableSquareLandOn(player,result,square) || forceEndTurn;
+		}
+		return forceEndTurn;
+	}
+	
+	public boolean handleNonOwnableSquareLandOn(IMonopolyPlayer player, DiceResult result,IMonopolySquare square){
+		boolean forceEndTurn = false;
+		if(square.isGoToJail()){
+			player.setJailTurn(1);
+			forceEndTurn = true;
+		}
+		if(square instanceof CardDealerSquare){
+			forceEndTurn = handleCardDealerSquareLandOn(player,result,square) || forceEndTurn;
+		}
+		int charge = square.getChargeAmount(player,result,board);
+		player.subtractMoney(charge);
+		return forceEndTurn;
+	}
+	
+	public boolean handleCardDealerSquareLandOn(IMonopolyPlayer player, DiceResult result,IMonopolySquare square){
+		CardResult cardResult = ((CardDealerSquare) square).drawCard().resolveCard(player, board);
+		if(cardResult.getMoneyChange() != 0){
+			player.addMoney(cardResult.getMoneyChange());
+		}
+		if(cardResult.getPlayerNewPosition() != null){
+			if(cardResult.getPlayerNewPosition() < player.getPosition()){
+				board.awardPassGo(player);
+			}
+			player.setPosition(cardResult.getPlayerNewPosition());
+		}
+		return cardResult.isForceEndTurn();
 	}
 	
 	public String validatePlayers(){

@@ -16,7 +16,9 @@ import game.IMonopolyPlayer;
 import game.IMonopolySquare;
 import game.MonopolyGame;
 import game.MonopolyPlayer;
+import game.cards.GenericMonopolyCard;
 import game.squares.BORailroad;
+import game.squares.CardDealerSquare;
 import game.squares.ElectricCompany;
 import game.squares.PennsylvaniaRailroad;
 import game.squares.ReadingRailroad;
@@ -25,6 +27,8 @@ import game.squares.ShortLineRailroad;
 public class TestGame {
 
 	/*
+
+
 
 
 	 */
@@ -52,10 +56,11 @@ public class TestGame {
 	}
 	@Test
 	public void testRoll7(){
-		//Player on beginning location (numbered 0), rolls 7, ends up on location 7
+		//Player on beginning location (numbered 0), rolls 6, ends up on location 6
 		MonopolyGame game = initGame();
+		game.setRoller(new FakeDiceRoller(2,4));
 		game.playerRolls(game.getPlayers().get(0));
-		assertEquals(7, game.getPlayers().get(0).getPosition());
+		assertEquals(6, game.getPlayers().get(0).getPosition());
 		
 	}
 	
@@ -158,7 +163,7 @@ public class TestGame {
 		//Player starts on Go, takes a turn where the Player does not additionally land on or pass over Go. Their balance remains unchanged.
 		MonopolyGame game = initGame();
 		game.getPlayers().get(0).setPosition(0);
-		game.setRoller(new FakeDiceRoller(4,3));
+		game.setRoller(new FakeDiceRoller(2,3));
 		game.playerRolls(game.getPlayers().get(0));
 		assertEquals(0,game.getPlayers().get(0).getMoney());
 	}
@@ -586,7 +591,7 @@ public class TestGame {
 		game.setBoard(new Board());
 		game.getPlayers().get(0).setPosition(38);
 		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
-		fakeDice.add(new FakeDiceRoller(2,2));
+		fakeDice.add(new FakeDiceRoller(4,4));
 		fakeDice.add(new FakeDiceRoller(4,4));
 		fakeDice.add(new FakeDiceRoller(2,2));
 		game.playTurn(player, fakeDice);
@@ -701,11 +706,94 @@ public class TestGame {
 		game.setBoard(new Board());
 		game.getPlayers().get(0).setPosition(0);
 		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
-		fakeDice.add(new FakeDiceRoller(3,4));
+		fakeDice.add(new FakeDiceRoller(3,2));
 		game.playTurn(player, fakeDice);
 		
 		assertEquals(true,player.getJailTurn() == 0);
-		assertEquals(17,player.getPosition());
+		assertEquals(15,player.getPosition());
 		assertEquals(1950,player.getMoney());
 	}
+	
+	@Test
+	public void playerPassesOverCommunityChest(){
+		//Player passes over Community Chest, nothing happens.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(0);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(2,1));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(3,player.getPosition());
+		assertEquals(2000,player.getMoney());
+	}
+	
+	@Test
+	public void playerLandsOnCommunityChest(){
+		//Player lands on Community Chest not rolling doubles. Player plays card. Card's effect happens. Card at bottom of stack of cards.
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(10);
+		((CardDealerSquare)game.getBoard().getSquares().get(2)).getCards().push(new GenericMonopolyCard("Generic",false,0,0));
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(4,3));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(0,player.getPosition());
+		assertEquals(2200,player.getMoney());
+	}
+	
+	@Test
+	public void playerMovesOnCommunityChestCardsGoWhereTheyShould(){
+		//Player lands on Community Chest rolling doubles. Player plays card. Cards' effect happens. Card at bottom of stack of cards:
+		MonopolyGame game = new MonopolyGame();
+		FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+		player.setMoney(2000);
+		game.getPlayers().add(player);
+		game.setBoard(new Board());
+		game.getPlayers().get(0).setPosition(9);
+		GenericMonopolyCard genericCard = new GenericMonopolyCard("Generic",false,0,0);
+		((CardDealerSquare)game.getBoard().getSquares().get(2)).getCards().push(genericCard);
+		ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+		fakeDice.add(new FakeDiceRoller(4,4));
+		fakeDice.add(new FakeDiceRoller(1,2));
+		game.playTurn(player, fakeDice);
+		
+		assertEquals(true,player.getJailTurn() == 0);
+		assertEquals(3,player.getPosition());
+		assertEquals(2200,player.getMoney());
+		assertEquals(((CardDealerSquare)game.getBoard().getSquares().get(17)).getDiscardedCards().peek(), genericCard);
+	}
+	
+	@Test
+	public void playerMakesNextRollAfterLandingOnCommChest(){
+		//Player continues rolling if it was roll 1/2 and they did not get the Go To Jail card.
+		//Player lands on Community Chest rolling doubles. Player plays card. Cards' effect happens. Card at bottom of stack of cards:
+				MonopolyGame game = new MonopolyGame();
+				FakeMonopolyPlayer player = new FakeMonopolyPlayer(2000);
+				player.setMoney(2000);
+				game.getPlayers().add(player);
+				game.setBoard(new Board());
+				game.getPlayers().get(0).setPosition(9);
+				GenericMonopolyCard genericCard = new GenericMonopolyCard("Generic",false,0,0);
+				((CardDealerSquare)game.getBoard().getSquares().get(2)).getCards().push(genericCard);
+				ArrayList<IDiceRoller> fakeDice= new ArrayList<IDiceRoller>();
+				fakeDice.add(new FakeDiceRoller(4,4));
+				fakeDice.add(new FakeDiceRoller(1,2));
+				game.playTurn(player, fakeDice);
+				
+				assertEquals(true,player.getJailTurn() == 0);
+				assertEquals(3,player.getPosition());
+				assertEquals(2200,player.getMoney());
+				assertEquals(((CardDealerSquare)game.getBoard().getSquares().get(17)).getDiscardedCards().peek(), genericCard);
+	}
+	
 }
